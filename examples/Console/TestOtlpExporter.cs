@@ -71,6 +71,15 @@ namespace Examples.Console
             // which decide to use OpenTelemetry.
             using (var sample = new InstrumentationWithActivitySource())
             {
+                using var source = new System.Diagnostics.ActivitySource("Samples.SampleServer");
+                var activity = source.StartActivity("Samplespan");
+                activity.SetTag("null strings", new string[] { "test", null, "after null", string.Empty, "after empty" });
+                activity.SetTag("regular long", new long[] { 2, 0 });
+                activity.SetTag("nullable long", new long?[] { 2, null, 0, 2 });
+                activity.SetTag("short array", new short[] { 2, 0 });
+                activity.Stop();
+
+                System.Console.ReadLine();
                 sample.Start();
 
                 System.Console.WriteLine("Traces are being created and exported" +

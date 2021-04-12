@@ -14,6 +14,8 @@
 // limitations under the License.
 // </copyright>
 
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using OpenTelemetry;
 using OpenTelemetry.Resources;
@@ -53,10 +55,14 @@ namespace Examples.Console
 
         internal static object RunWithActivity(string host, int port)
         {
+            var attributes = new List<KeyValuePair<string, object>>();
+            attributes.Add(new KeyValuePair<string, object>("testAttribute", "2wenty three"));
+            attributes.Add(new KeyValuePair<string, object>("array", new long[] { 0, 1, 2, 3 }));
+
             // Enable OpenTelemetry for the sources "Samples.SampleServer" and "Samples.SampleClient"
             // and use the Jaeger exporter.
             using var openTelemetry = Sdk.CreateTracerProviderBuilder()
-                    .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("jaeger-test"))
+                    .SetResourceBuilder(ResourceBuilder.CreateDefault().AddAttributes(attributes).AddService("jaeger-test"))
                     .AddSource("Samples.SampleClient", "Samples.SampleServer")
                     .AddJaegerExporter(o =>
                     {
@@ -80,18 +86,17 @@ namespace Examples.Console
                     })
                     .Build();
 
-            // The above lines are required only in Applications
-            // which decide to use OpenTelemetry.
-
-            using (var sample = new InstrumentationWithActivitySource())
+            var source = new ActivitySource("Samples.SampleClient");
+            using (var span = source.StartActivity("autan-span"))
             {
-                sample.Start();
-
-                System.Console.WriteLine("Traces are being created and exported" +
-                    "to Jaeger in the background. Use Jaeger to view them." +
-                    "Press ENTER to stop.");
-                System.Console.ReadLine();
+                span.SetTag("testTag", 3);
+                span.SetTag("SpanArrLong", new long[] { 0, 1, 2, 3 });
+                span.SetTag("SpanArrString", new string[] { "0", "a", string.Empty, "test" });
+                span.SetTag("SpanArrInt", new int[] { 0, 1, 2 });
             }
+
+            System.Console.WriteLine("Finished austin's test section");
+            System.Console.ReadLine();
 
             return null;
         }
