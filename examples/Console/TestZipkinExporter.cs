@@ -15,6 +15,8 @@
 // </copyright>
 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using OpenTelemetry;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -35,26 +37,46 @@ namespace Examples.Console
             //
             // dotnet run zipkin -u http://localhost:9411/api/v2/spans
 
-            // Enable OpenTelemetry for the sources "Samples.SampleServer" and "Samples.SampleClient"
-            // and use the Zipkin exporter.
-            using var openTelemetry = Sdk.CreateTracerProviderBuilder()
-                    .AddSource("Samples.SampleClient", "Samples.SampleServer")
-                    .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("zipkin-test"))
-                    .AddZipkinExporter(o =>
-                    {
-                        o.Endpoint = new Uri(zipkinUri);
-                    })
-                    .Build();
+            var resAttributes = new List<KeyValuePair<string, object>>();
+            resAttributes.Add(new KeyValuePair<string, object>("service.name", "AutanTest"));
+            resAttributes.Add(new KeyValuePair<string, object>("testLong", 2L));
+            resAttributes.Add(new KeyValuePair<string, object>("testShort", (short)2));
+            resAttributes.Add(new KeyValuePair<string, object>("testBool", true));
+            resAttributes.Add(new KeyValuePair<string, object>("testInt", (int)2));
+            resAttributes.Add(new KeyValuePair<string, object>("testDouble", 2D));
+            resAttributes.Add(new KeyValuePair<string, object>("testFloat", 2F));
+            resAttributes.Add(new KeyValuePair<string, object>("testAttribute", "2wenty three"));
+            resAttributes.Add(new KeyValuePair<string, object>("longarray", new long[] { 0, 1, 2, 3 }));
+            resAttributes.Add(new KeyValuePair<string, object>("stringarray", new string[] { null, "0", "two", string.Empty, "three" }));
 
-            using (var sample = new InstrumentationWithActivitySource())
+            using var tracerProvider = Sdk.CreateTracerProviderBuilder().AddSource("Test").SetResourceBuilder(ResourceBuilder.CreateDefault().AddAttributes(resAttributes)).AddZipkinExporter(o =>
             {
-                sample.Start();
+                o.Endpoint = new Uri(zipkinUri);
+            }).Build();
 
-                System.Console.WriteLine("Traces are being created and exported" +
-                    "to Zipkin in the background. Use Zipkin to view them. " +
-                    "Press ENTER to stop.");
-                System.Console.ReadLine();
+            var activitySource = new ActivitySource("Test");
+            using (var activity = activitySource.StartActivity("TestActivity"))
+            {
+                activity.SetTag("stringTag", "test");
+                activity.SetTag("boolTag", true);
+                activity.SetTag("longTag", 2L);
+                activity.SetTag("doubleTag", 2D);
+
+                activity.SetTag("intTag", (int)2);
+                activity.SetTag("shortTag", (short)2);
+                activity.SetTag("floatTag", 2f);
+
+                activity.SetTag("stringArrTag", new string[] { null, "0", "two", string.Empty, "three" });
+                activity.SetTag("boolArrTag", new bool[] { true, false });
+                activity.SetTag("longArrTag", new long[] { 0, 1, 2 });
+                activity.SetTag("doubleArrTag", new double[] { 0, 1, 2 });
+                activity.SetTag("intArrTag", new int[] { 0, 1, 2 });
+                activity.SetTag("shortArrTag", new short[] { 0, 1, 2 });
+                activity.SetTag("floatArrTag", new float[] { 0, 1, 2 });
+                activity.Stop();
             }
+
+            activitySource.Dispose();
 
             return null;
         }
