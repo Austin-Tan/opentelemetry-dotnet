@@ -86,7 +86,7 @@ services.AddOpenTelemetryTracing(
 It is important to note that this `Filter` option is specific to this
 instrumentation. OpenTelemetry has a concept of a
 [Sampler](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/sdk.md#sampling),
-and the `Filter` option does the filtering *before* the Sampler is invoked.
+and the `Filter` option does the filtering *after* the Sampler is invoked.
 
 ### Enrich
 
@@ -129,6 +129,13 @@ services.AddOpenTelemetryTracing((builder) =>
 is the general extensibility point to add additional properties to any activity.
 The `Enrich` option is specific to this instrumentation, and is provided to
 get access to `HttpRequest` and `HttpResponse`.
+
+### RecordException
+
+This instrumentation automatically sets Activity Status to Error if the
+Http StatusCode is >= 400.
+Additionally, `RecordException` feature may be turned on, to store the exception
+to the Activity itself as ActivityEvent.
 
 ## References
 
